@@ -147,7 +147,7 @@ async def on_message(message):
             userid = user[3:-1]
             with con:
               sql = "INSERT INTO reqs (id, action, datetime) values (?,?,?)"
-              data = (message.id, 'vote_threshold', f'u_{user}')
+              data = (message.id, f'u {userid} {seconds}', time.time())
               con.execute(sql, data)
               con.commit()
             

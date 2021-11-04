@@ -6,6 +6,8 @@ import string
 import respond
 import actions
 import time
+import asyncio
+from persist_pq import Persist_PQ
 from discord.ext import commands
 con = sl.connect('meepybot.db')
 intents = discord.Intents.default()
@@ -23,6 +25,12 @@ def randomstring(N=40):
     ''.join(random.SystemRandom().choice(string.ascii_uppercase +
                                          string.digits) for _ in range(N))
 
+
+
+async def event_processor():
+    while True:
+
+        asyncio.sleep(1)
 
 async def sendmessage(message, msg):
     await message.channel.send(msg)
@@ -84,7 +92,8 @@ async def on_message(message):
     if len(tokenized) == 0:
         return
     
-    if tokenized[0] == '?mmod' or tokenized[0] == '?mbot':
+    if tokenized[0] == '?mmod' or tokenized[0] == '?mbot'\
+    or tokenized[0] == '?meep':
         command = str(message.content)[6:]
         if len(command.split())==0:
           await message.channel.send(open('assets/help.txt', 'r').read())
@@ -99,7 +108,9 @@ async def on_message(message):
           print(str(message))
           await message.channel.send(f"Debug info logged ({randomstring(N=20)})", delete_after=2)
           return
-        if firstword == 'random' or firstword == 'motd': await respond.getrandompin(message); return
+        if firstword == 'random' or firstword == 'motd':
+          if  len(command.split())>=2: await respond.getrandompin(message, num=command.split()[1]); return
+          else: await respond.getrandompin(message); return
         
         #check for empty first character
         if command[0] == ' ':
@@ -126,10 +137,11 @@ async def on_message(message):
         # Initiate unmute
         if firstword == 'unmute':
             user = command.split()[-1]
-            if (user[2]=="&"):
+            if (user[2]=="&") or (user[0]=='@'):
               # This message was suggested by a friend
-              await message.channel.send("Are you dumb? Why are you trying to mute a role!?")
+              await message.channel.send("Are you dumb? Why are you trying to unmute a role!?")
               return
+
             print("USER =", user)
             seconds = await getdata("vote_timeout", msg=message)
             if seconds == None:
@@ -161,20 +173,32 @@ async def on_message(message):
         #Initiate mute
         elif firstword == 'mute':
             user = command.split()[-1]
+            if (user[2]=="&") or (user[0]=='@'):
+              # This message was suggested by a friend
+              await message.channel.send("Are you dumb? Why are you trying to mute a role!?")
+              return
+
             print("USER =", user)
             seconds = await getdata("vote_timeout", msg=message)
             if seconds == None:
                 await message.channel.send("Database exception occured")
                 return
             else:
-                seconds == int(seconds)
+                seconds = int(seconds)
             numvotes = await getdata('vote_threshold', msg=message)
             if numvotes == None:
                 await message.channel.send("Database exception occured")
                 return
             else:
                 numvotes = int(numvotes)
-
+            
+            userid = user[3:-1]
+            with con:
+              sql = "INSERT INTO reqs (id, action, datetime) values (?,?,?)"
+              data = (message.id, f'm {userid} {seconds}', time.time())
+              con.execute(sql, data)
+              con.commit()
+            
             sent = await message.channel.send(
                 f"**Mute {user}?**\nReact to the two options to vote ({numvotes} votes to mute or cancel)\n*Will go away after {seconds} seconds*",
                 delete_after=seconds)

@@ -1,2 +1,3 @@
-hi=open('assets/help.txt', 'r').read()
-print(hi)
+user = "<@&898018723292667955>"
+
+print(user[3:-1])

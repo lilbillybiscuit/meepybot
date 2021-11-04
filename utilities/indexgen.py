@@ -1,6 +1,6 @@
 import sqlite3 as sl
 
-con = sl.connect('meepybot.db')
+con = sl.connect('../meepybot.db')
 
 data=[
   ("vote_threshold", 6),

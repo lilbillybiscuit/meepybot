@@ -4,12 +4,15 @@ import sqlite3 as sl
 import random
 import string
 import respond
-
+import actions
+import time
+from discord.ext import commands
 con = sl.connect('meepybot.db')
 intents = discord.Intents.default()
 intents.members=True
-client = discord.Client(intents=intents)
+client = commands.Bot(command_prefix='?', intents=intents)
 respond.client=client
+actions.client=client
 
 @client.event
 async def on_ready():
@@ -46,14 +49,19 @@ async def configure(str1, msg=None):
             con.commit()
             if not msg == None:
                 await msg.channel.send(f"Vote threshold set to {val}")
+            
     elif key == "timeout":
-        with con:
-            sql = "UPDATE USER SET value = ? WHERE id = ?"
-            data = (str(int(val)), 'vote_timeout')
-            con.execute(sql, data)
-            con.commit()
-            if msg is not None:
-                await msg.channel.send(f"Vote timeout set to {val} seconds")
+      if (int(val)) > 300:
+        if not msg == None:
+          await msg.channel.send(f"Timeout too long (max is 300 seconds)")
+          return
+      with con:
+          sql = "UPDATE USER SET value = ? WHERE id = ?"
+          data = (str(int(val)), 'vote_timeout')
+          con.execute(sql, data)
+          con.commit()
+          if msg is not None:
+              await msg.channel.send(f"Vote timeout set to {val} seconds")
 
 
 async def getdata(key, msg=None):
@@ -66,7 +74,6 @@ async def getdata(key, msg=None):
         break
     if res == None: return None
     return res[1]
-
 
 @client.event
 async def on_message(message):
@@ -93,6 +100,7 @@ async def on_message(message):
           await message.channel.send(f"Debug info logged ({randomstring(N=20)})", delete_after=2)
           return
         if firstword == 'random' or firstword == 'motd': await respond.getrandompin(message); return
+        
         #check for empty first character
         if command[0] == ' ':
             print("Incorrect command string: \"" + command + "\"")
@@ -102,28 +110,47 @@ async def on_message(message):
         if firstword == 'set':
             try:
                 await configure(command[4:], msg=message)
+                return
             except:
                 await message.channel.send(
                     ":question: **Something went wrong**", delete_after=3)
                 return
+        
 
+        if firstword == 'listroles':
+            print(message.guild.roles)
+            await message.channel.send(str(message.guild.roles), delete_after=15)
+            return
+
+        
         # Initiate unmute
-        elif firstword == 'unmute':
+        if firstword == 'unmute':
             user = command.split()[-1]
+            if (user[2]=="&"):
+              # This message was suggested by a friend
+              await message.channel.send("Are you dumb? Why are you trying to mute a role!?")
+              return
             print("USER =", user)
             seconds = await getdata("vote_timeout", msg=message)
             if seconds == None:
                 await message.channel.send("Database exception occured")
                 return
             else:
-                seconds == int(seconds)
+                seconds = int(seconds)
             numvotes = await getdata('vote_threshold', msg=message)
             if numvotes == None:
                 await message.channel.send("Database exception occured")
                 return
             else:
                 numvotes = int(numvotes)
-
+            
+            userid = user[3:-1]
+            with con:
+              sql = "INSERT INTO reqs (id, action, datetime) values (?,?,?)"
+              data = (message.id, 'vote_threshold', f'u_{user}')
+              con.execute(sql, data)
+              con.commit()
+            
             sent = await message.channel.send(
                 f"**Unmute {user}?**\nReact to the two options to vote ({numvotes} votes to unmute or cancel)\n*Will go away after {seconds} seconds*",
                 delete_after=seconds)
@@ -166,6 +193,7 @@ async def on_message(message):
 async def on_raw_reaction_add(reaction):
     if reaction.member == client.user:
         return
+    
     print(str(reaction))
     print(str(reaction.emoji))
     print(str(reaction.message_id))

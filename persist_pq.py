@@ -27,6 +27,6 @@ class Persist_PQ:
         return self.pq.qsize()
     def empty(self):
         return self.pq.empty()
-    def full(self)
+    def full(self):
         return self.pq.full()
         

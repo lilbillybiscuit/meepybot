@@ -16,6 +16,8 @@ client = commands.Bot(command_prefix='?', intents=intents)
 respond.client=client
 actions.client=client
 
+pq = Persist_PQ("meepy.pq")
+
 @client.event
 async def on_ready():
     print('Logged in as {0.user}'.format(client))

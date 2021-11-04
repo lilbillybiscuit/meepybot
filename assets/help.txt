@@ -1,0 +1,9 @@
+**Hi there! This is a bot that likes democracy.**
+This bot currently has key features disabled.
+
+Call me with **?mmod**
+
+The following commands are available:
+View this message with **?mmod help**
+Mute/unmute someone with **?mmod [mute/unmute] [\@someone]**
+(Mods only) Set options with **?mmod set [option] [value]**

@@ -3,7 +3,7 @@ import discord
 
 
 
-con = sl.connect('../meepybot.db')
+con = sl.connect('meepybot.db')
 
 drop = False
 try:

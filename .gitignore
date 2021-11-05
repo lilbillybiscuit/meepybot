@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 
 meepybot.db
+meepy.pq
+meepy1.pq

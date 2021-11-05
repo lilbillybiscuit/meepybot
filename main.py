@@ -7,16 +7,13 @@ import respond
 import actions
 import time
 import asyncio
-from persist_pq import Persist_PQ
+import essential
+#from persist_pq import Persist_PQ
 from discord.ext import commands
-con = sl.connect('meepybot.db')
-intents = discord.Intents.default()
-intents.members=True
-client = commands.Bot(command_prefix='?', intents=intents)
-respond.client=client
-actions.client=client
+con = essential.con
+client = essential.client
 
-pq = Persist_PQ("meepy.pq")
+#pq = Persist_PQ("meepy.pq")
 
 @client.event
 async def on_ready():
@@ -39,11 +36,9 @@ async def sendmessage(message, msg):
 
 
 async def configure(str1, msg=None):
-    print(str1)
     # Change meepybot settings here
     key = str1.split()[0]
     val = str1.split()[1]
-    print(key, val)
     try:
         val = int(val)
     except:
@@ -52,11 +47,7 @@ async def configure(str1, msg=None):
         res = 0
         with con:
             print("communicated to database")
-            #sql = "INSERT INTO USER (id, value) values (?,?)"
-            sql = "UPDATE USER SET value = ? WHERE id = ?"
-            data = (str(int(val)), 'vote_threshold')
-            con.execute(sql, data)
-            con.commit()
+            essential.setdata('vote_threshold', str(int(val)))
             if not msg == None:
                 await msg.channel.send(f"Vote threshold set to {val}")
             
@@ -66,13 +57,23 @@ async def configure(str1, msg=None):
           await msg.channel.send(f"Timeout too long (max is 300 seconds)")
           return
       with con:
-          sql = "UPDATE USER SET value = ? WHERE id = ?"
-          data = (str(int(val)), 'vote_timeout')
-          con.execute(sql, data)
-          con.commit()
+          essential.setdata('vote_timeout', str(int(val)))
           if msg is not None:
               await msg.channel.send(f"Vote timeout set to {val} seconds")
 
+def setdata(key, val):
+  sql = "SELECT * FROM USER WHERE id=:key"
+  data={"key": str(key)}
+  cur = con.execute(sql, data)
+  works=False
+  for row in cur:
+    works=True
+  if not works:
+    con.executemany("INSERT INTO USER (id, value) values (?,?)", (str(key),"0"))
+  sql = "UPDATE USER SET value = ? WHERE id = ?"
+  data = (str(val), str(key))
+  con.execute(sql, data)
+  con.commit()
 
 async def getdata(key, msg=None):
     sql = "SELECT * FROM USER WHERE id=:key"
@@ -87,9 +88,15 @@ async def getdata(key, msg=None):
 
 @client.event
 async def on_message(message):
+    print(message)
+    print(message.type)
     if message.author == client.user:
         return
-    
+    # Process by message type
+    if (str(message.type) == "MessageType.pins_add"):
+      hi=4
+
+
     tokenized = message.content.split()
     if len(tokenized) == 0:
         return
@@ -114,6 +121,13 @@ async def on_message(message):
           if  len(command.split())>=2: await respond.getrandompin(message, num=command.split()[1]); return
           else: await respond.getrandompin(message); return
         
+        if firstword == 'vote':
+            msg1 = command[5:]
+            sent = await message.channel.send(f"**Custom vote**\n{msg1}")
+            await sent.add_reaction("✅")
+            await sent.add_reaction("❌")
+            return
+        
         #check for empty first character
         if command[0] == ' ':
             print("Incorrect command string: \"" + command + "\"")
@@ -124,7 +138,8 @@ async def on_message(message):
             try:
                 await configure(command[4:], msg=message)
                 return
-            except:
+            except Exception as e:
+                print(e)
                 await message.channel.send(
                     ":question: **Something went wrong**", delete_after=3)
                 return

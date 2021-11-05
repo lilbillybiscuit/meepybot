@@ -1,6 +1,7 @@
 import discord
 import random
-client = ""
+import essential
+client = essential.client
 
 
 #context is from the reaction, will be transferred to message

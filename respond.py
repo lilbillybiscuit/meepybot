@@ -1,8 +1,19 @@
 import discord
 import random
-client = ""
+import essential
+import pickle
+import os
+
+client = essential.client
 
 async def getrandompin(ctx, num=None):
+  pins=0
+  cachepath=f"cache/pincache_{ctx.channel.id}"
+  if os.path.exists(cachepath):
+    with open(cachepath, 'rb') as f:
+      pins=pickle.load(f)
+  else:
+    pins.cache
   pins = list(await ctx.channel.pins())
   if len(pins) == 0:
     await ctx.channel.send("No pins exist")

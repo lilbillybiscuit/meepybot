@@ -8,6 +8,6 @@ with con:
     print(row)
 """
 with con:
-  data = con.execute("SELECT * FROM reqs")
+  data = con.execute("SELECT * FROM user")
   for row in data:
     print(row)

@@ -87,13 +87,11 @@ async def getdata(key, msg=None):
 
 @client.event
 async def on_message(message):
-    print(message)
-    print(message.type)
     if message.author == client.user:
         return
     # Process by message type
     if (str(message.type) == "MessageType.pins_add"):
-      essential.refresh_pin_cache(message)
+      #essential.refresh_pin_cache(message)
       return
     tokenized = message.content.split()
     if len(tokenized) == 0:
@@ -118,14 +116,26 @@ async def on_message(message):
         if firstword == 'random' or firstword == 'motd':
           if  len(command.split())>=2: await respond.getrandompin(message, num=command.split()[1]); return
           else: await respond.getrandompin(message); return
-        
+        if firstword == 'random2':
+            try:
+                await respond.getrandompin2(message)
+            except Exception as e:
+                print(e)
+                await message.channel.send("Something went wrong...")
+            return
         if firstword == 'vote':
             msg1 = command[5:]
             sent = await message.channel.send(f"**Custom vote**\n{msg1}")
             await sent.add_reaction("✅")
             await sent.add_reaction("❌")
             return
-        
+        if firstword == 'getpins':
+            try:
+                await respond.pullpins(message)
+            except Exception as e:
+                await message.channel.send("Something went wrong...")
+                print(e)
+            return
         #check for empty first character
         if command[0] == ' ':
             print("Incorrect command string: \"" + command + "\"")

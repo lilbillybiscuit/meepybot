@@ -15,6 +15,11 @@ client = essential.client
 
 #pq = Persist_PQ("meepy.pq")
 
+async def event_processor():
+    while True:
+
+        asyncio.sleep(1)
+
 @client.event
 async def on_ready():
     print('Logged in as {0.user}'.format(client))
@@ -24,12 +29,6 @@ def randomstring(N=40):
     ''.join(random.SystemRandom().choice(string.ascii_uppercase +
                                          string.digits) for _ in range(N))
 
-
-
-async def event_processor():
-    while True:
-
-        asyncio.sleep(1)
 
 async def sendmessage(message, msg):
     await message.channel.send(msg)
@@ -94,9 +93,8 @@ async def on_message(message):
         return
     # Process by message type
     if (str(message.type) == "MessageType.pins_add"):
-      hi=4
-
-
+      essential.refresh_pin_cache(message)
+      return
     tokenized = message.content.split()
     if len(tokenized) == 0:
         return
@@ -150,7 +148,12 @@ async def on_message(message):
             await message.channel.send(str(message.guild.roles), delete_after=15)
             return
 
-        
+        if firstword == "pin":
+            try:
+                await respond.addpin(message, command)
+            except:
+                await message.channel.send("Something went wrong...")
+            return
         # Initiate unmute
         if firstword == 'unmute':
             user = command.split()[-1]

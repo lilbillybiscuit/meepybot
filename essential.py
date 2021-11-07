@@ -5,7 +5,7 @@ import pickle
 
 intents = discord.Intents.default()
 intents.members=True
-client = commands.Bot(command_prefix='?', intents=intents)
+client = commands.Bot(command_prefix='?meep ', intents=intents)
 
 cache=dict()
 

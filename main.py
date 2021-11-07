@@ -59,6 +59,16 @@ async def configure(str1, msg=None):
           essential.setdata('vote_timeout', str(int(val)))
           if msg is not None:
               await msg.channel.send(f"Vote timeout set to {val} seconds")
+    elif key == "slowmoderole":
+        if essential.keyexists("slowmoderole"):
+            if not msg == None:
+                await msg.channel.send(f"")
+            return
+        with con:
+            essential.setdata('vote_timeout', str(int(val)))
+            if msg is not None:
+                await msg.channel.send(f"Vote timeout set to {val} seconds")
+
 
 def setdata(key, val):
   sql = "SELECT * FROM USER WHERE id=:key"
@@ -85,8 +95,64 @@ async def getdata(key, msg=None):
     if res == None: return None
     return res[1]
 
+
+@client.command(name="set", pass_context=True)
+@commands.has_any_role("Admin", "mod")
+@commands.has_permissions(administrator=True)
+async def setoption(ctx, *args):
+    try:
+        # Change meepybot settings here
+        key = args[0]
+        val = args[1]
+
+        if key == "threshold":
+            res = 0
+            essential.setdata('vote_threshold', str(int(val)))
+            await ctx.channel.send(f"Vote threshold set to {val}")
+                
+        elif key == "timeout":
+            if (int(val)) > 300:
+                await ctx.channel.send(f"Timeout too long (max is 300 seconds)")
+                return
+            essential.setdata('vote_timeout', str(int(val)))
+            await ctx.channel.send(f"Vote timeout set to {val} seconds")
+
+        elif key == "slowmoderole":
+            essential.setdata('slowmoderole', str(int(val)))
+            await ctx.channel.send(f"Vote timeout set to {val} seconds")
+
+    except Exception as e:
+        print(e)
+        await ctx.channel.send(":question: **Something went wrong**", delete_after=3)
+        return
+
+@setoption.error
+async def example_error(ctx: commands.Context, error: commands.CommandError):
+    if isinstance(error, commands.MissingPermissions):
+        message = "Insufficent Permissions"
+    else:
+        message = "Something went wrong..."
+
+    await ctx.send(message, delete_after=3)
+    await ctx.message.delete(delay=3)
+
+@client.command(pass_context=True)
+async def pin(ctx, arg):
+    try:
+        await respond.addpin(ctx, int(arg))
+    except:
+        await ctx.channel.send("Something went wrong...")
+    return
+
 @client.event
 async def on_message(message):
+    await client.process_commands(message)
+    return
+    if actions.isslowmoded(message):
+        
+        message.delete()
+        return
+    
     if message.author == client.user:
         return
     # Process by message type
@@ -142,15 +208,6 @@ async def on_message(message):
             await message.channel.send(
                 ":question: **Incorrect command string**", delete_after=3)
             return
-        if firstword == 'set':
-            try:
-                await configure(command[4:], msg=message)
-                return
-            except Exception as e:
-                print(e)
-                await message.channel.send(
-                    ":question: **Something went wrong**", delete_after=3)
-                return
         
 
         if firstword == 'listroles':
@@ -158,20 +215,17 @@ async def on_message(message):
             await message.channel.send(str(message.guild.roles), delete_after=15)
             return
 
-        if firstword == "pin":
-            try:
-                await respond.addpin(message, command)
-            except:
-                await message.channel.send("Something went wrong...")
-            return
         # Initiate unmute
         if firstword == 'unmute':
             user = command.split()[-1]
+            userid = user[3:-1]
             if (user[2]=="&") or (user[0]=='@'):
               # This message was suggested by a friend
               await message.channel.send("Are you dumb? Why are you trying to unmute a role!?")
               return
-
+            if await essential.keyexists(f"u {userid}", db="reqs", key_name="action"):
+                await message.channel.send(f"Request to unmute {user} already exists")
+                return
             print("USER =", user)
             seconds = await getdata("vote_timeout", msg=message)
             if seconds == None:
@@ -185,14 +239,14 @@ async def on_message(message):
                 return
             else:
                 numvotes = int(numvotes)
-            
-            userid = user[3:-1]
+
+
             with con:
-              sql = "INSERT INTO reqs (id, action, datetime) values (?,?,?)"
-              data = (message.id, f'u {userid} {seconds}', time.time())
+              sql = "INSERT INTO reqs (id, channel, action, datetime) values (?,?,?)"
+              data = (int(message.id), int(message.channel.id), f'u {userid}', int(time.time()+seconds))
               con.execute(sql, data)
               con.commit()
-            
+
             sent = await message.channel.send(
                 f"**Unmute {user}?**\nReact to the two options to vote ({numvotes} votes to unmute or cancel)\n*Will go away after {seconds} seconds*",
                 delete_after=seconds)
@@ -203,11 +257,14 @@ async def on_message(message):
         #Initiate mute
         elif firstword == 'mute':
             user = command.split()[-1]
+            userid = user[3:-1]
             if (user[2]=="&") or (user[0]=='@'):
               # This message was suggested by a friend
               await message.channel.send("Are you dumb? Why are you trying to mute a role!?")
               return
-
+            if await essential.keyexists(f"m {userid}", db="reqs", key_name="action"):
+                await message.channel.send(f"Request to mute {user} already exists")
+                return
             print("USER =", user)
             seconds = await getdata("vote_timeout", msg=message)
             if seconds == None:
@@ -222,10 +279,9 @@ async def on_message(message):
             else:
                 numvotes = int(numvotes)
             
-            userid = user[3:-1]
             with con:
               sql = "INSERT INTO reqs (id, action, datetime) values (?,?,?)"
-              data = (message.id, f'm {userid} {seconds}', time.time())
+              data = (message.id, f'm {userid}', int(time.time()+seconds))
               con.execute(sql, data)
               con.commit()
             

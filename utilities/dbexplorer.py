@@ -8,6 +8,6 @@ with con:
     print(row)
 """
 with con:
-  data = con.execute("SELECT * FROM pins")
+  data = con.execute("SELECT id, action, max(datetime) FROM reqs")
   for row in data:
     print(row)

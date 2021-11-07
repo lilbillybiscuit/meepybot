@@ -24,19 +24,29 @@ def background():
                 hi=5
         time.sleep(1)
 
-async def hasadmin(message):
-    role = discord.utils.find(lambda r: r.name == 'Member', ctx.message.guild.roles)
-    if role in user.roles:
-        await bot.say("{} is not muted".format(user))
-    else:
-        await bot.add_roles(user, role)
 
 async def isslowmoded(message):
-    user_id=int(user_id)
-    if essential.keyexists(user_id, db="slowmoded", key_name="user_id"):
-        return True
-    else:
-        return False
+    user_id=int(message.author.id)
+    with con:
+
+        if discord.utils.get(message.author.roles, name="slowmoded") is None:
+            return None
+        sql = "SELECT user_id,channel,datetime FROM slowmoded where user_id=:uid AND channel=:channel;"
+        res=con.execute(sql, {"uid": user_id, "channel" : message.channel.id})
+        works=False
+        data=0
+        for row in res:
+            works=True
+            data=row
+            if works: break
+        if works:
+            return data[2]
+        else:
+            sql = "INSERT INTO slowmoded (user_id, channel, datetime) values (?,?,?)"
+            data= (user_id, message.channel.id, int(time.time()))
+            con.execute(sql, data)
+            con.commit()
+            return 0
 #context is from the reaction, will be transferred to message
 #user_id is the one that's being considered
 #adds the mute role to the user_id

@@ -16,7 +16,7 @@ with con:
     except:
         print("Error handling database pins")
     try:
-        con.execute("CREATE TABLE slowmoded (user_id INTEGER NOT NULL PRIMARY KEY, channel INTEGER, datetime INTEGER, slowmode_time);")
+        con.execute("CREATE TABLE slowmoded (user_id INTEGER, channel INTEGER, datetime INTEGER, slowmode_time);")
     except:
         print("Error handling database slowmoded")
 

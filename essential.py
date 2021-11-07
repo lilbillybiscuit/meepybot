@@ -38,7 +38,7 @@ def setdata(key, val, db="USER"):
   for row in cur:
     works=True
   if not works:
-    con.executemany(f"INSERT INTO {db} (id, value) values (?,?)", (str(key),"0"))
+    con.execute(f"INSERT INTO {db} (id, value) values (?,?)", [str(key),"0"])
   sql = f"UPDATE {db} SET value = ? WHERE id = ?"
   data = (str(val), str(key))
   con.execute(sql, data)

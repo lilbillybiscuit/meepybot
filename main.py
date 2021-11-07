@@ -98,7 +98,6 @@ async def getdata(key, msg=None):
 
 @client.command(name="set", pass_context=True)
 @commands.has_any_role("Admin", "mod")
-@commands.has_permissions(administrator=True)
 async def setoption(ctx, *args):
     try:
         # Change meepybot settings here
@@ -118,40 +117,70 @@ async def setoption(ctx, *args):
             await ctx.channel.send(f"Vote timeout set to {val} seconds")
 
         elif key == "slowmoderole":
-            essential.setdata('slowmoderole', str(int(val)))
-            await ctx.channel.send(f"Vote timeout set to {val} seconds")
+            role=discord.utils.get(ctx.guild.roles,name=val)
+            if role is None:
+                await ctx.channel.send(f"Role doesn't exist")
+                return
+            essential.setdata('slowmoderole', str(int(role.id)))
+            await ctx.channel.send(f"Slowmode Role ID set to {val} (Role ID: {role.id})")
+
+        elif key == "slowmodetime":
+            essential.setdata('slowmodetime', str(int(val)))
+            await ctx.channel.send(f"Slowmode timeout set to {val}")
 
     except Exception as e:
         print(e)
         await ctx.channel.send(":question: **Something went wrong**", delete_after=3)
         return
-
 @setoption.error
-async def example_error(ctx: commands.Context, error: commands.CommandError):
-    if isinstance(error, commands.MissingPermissions):
-        message = "Insufficent Permissions"
+async def setoption_error(ctx: commands.Context, error: commands.CommandError):
+    if isinstance(error, commands.MissingAnyRole):
+        message = "You don't have the required role..."
     else:
         message = "Something went wrong..."
 
     await ctx.send(message, delete_after=3)
     await ctx.message.delete(delay=3)
 
+
 @client.command(pass_context=True)
+@commands.has_any_role("Admin", "mod")
 async def pin(ctx, arg):
     try:
         await respond.addpin(ctx, int(arg))
     except:
         await ctx.channel.send("Something went wrong...")
     return
+@pin.error
+async def pin_error(ctx: commands.Context, error: commands.CommandError):
+    if isinstance(error, commands.MissingAnyRole):
+        message = "Pinning requires 'mod' or 'Admin'"
+    else:
+        message = "Something went wrong..."
+
+    await ctx.send(message, delete_after=3)
+    await ctx.message.delete(delay=3)
+
 
 @client.event
 async def on_message(message):
     await client.process_commands(message)
-    return
-    if actions.isslowmoded(message):
-        
-        message.delete()
-        return
+    temp=await actions.isslowmoded(message)
+
+    if temp is not None:
+        timeout=await essential.getdata("slowmodetime")
+        # Temp represents the time
+        #print(time.time(), temp, int(timeout))
+        if time.time()<temp+int(timeout):
+            await message.delete()
+            #await message.channel.send(f"Slowmoded ({round(temp+int(timeout)-time.time(),2)} seconds left)", delete_after=1)
+        else:
+            with con:
+                #print("HI")
+                sql = "UPDATE slowmoded SET datetime=? WHERE user_id= ? and channel=?"
+                con.execute(sql, (int(time.time()), int(message.author.id), int(message.channel.id)))
+                con.commit()
+            return
     
     if message.author == client.user:
         return

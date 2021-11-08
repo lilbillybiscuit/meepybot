@@ -214,8 +214,9 @@ async def forceunmute(ctx, arg):
 @commands.cooldown(1,10)
 async def unmute(ctx, arg):
     message=ctx.message
+    mentions = message.mentions
     user = arg
-    userid = user[3:-1]
+    userid = mentions[0].id
     if (user[2]=="&") or (user[0]=='@'):
         # This message was suggested by a friend
         await message.channel.send("Are you dumb? Why are you trying to unmute a role!?")
@@ -270,9 +271,9 @@ async def forcemute(ctx, arg):
 @commands.cooldown(1, 10)
 async def mute(ctx, arg):
     message=ctx.message
+    mentions = message.mentions
     user = arg
-    print("Muting: ", user)
-    userid = user[3:-1]
+    userid = mentions[0].id
     if (user[2]=="&") or (user[0]=='@'):
         # This message was suggested by a friend
         await message.channel.send("Are you dumb? Why are you trying to mute a role!?")

@@ -8,11 +8,11 @@ with con:
     except:
         print("Error handling database user")
     try:
-        con.execute("CREATE TABLE reqs (id INTEGER, channel INTEGER, action VARCHAR(100), datetime INTEGER);")
+        con.execute("CREATE TABLE reqs (id INTEGER PRIMARY KEY, channel INTEGER, action VARCHAR(100), datetime INTEGER, guild INTEGER);")
     except:
         print("Error handling database reqs")
     try:
-        con.execute("CREATE TABLE pins (channel INTEGER, message_id INTEGER); ")
+        con.execute("CREATE TABLE pins (channel INTEGER, message_id INTEGER, datetime INTEGER); ")
     except:
         print("Error handling database pins")
     try:
@@ -22,7 +22,8 @@ with con:
 
 data=[
   ("vote_threshold", 6),
-  ("vote_timeout", 300)
+  ("vote_timeout", 300),
+  ("slowmodetime", 5),
 ]
 
 with con:

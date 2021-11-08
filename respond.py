@@ -3,12 +3,16 @@ import random
 import essential
 import pickle
 import os
+import time
 
 client = essential.client
 
-async def getrandompin2(ctx):
+async def getrandompin2(ctx, arg=None):
     sql = "SELECT channel, message_id FROM pins WHERE channel=:chan ORDER BY RANDOM() LIMIT 1"
     data = {"chan" : int(ctx.channel.id)}
+    if arg is not None:
+        sql = "SELECT channel, message_id FROM pins WHERE channel=:chan ORDER BY datetime ASC LIMIT :arg,1"
+        data = {"chan" : int(ctx.channel.id), "arg": int(arg)}
     res = essential.con.execute(sql, data)
     for row in res:
         res=row
@@ -62,7 +66,7 @@ async def getrandompin(ctx, num=None):
   return
 
 async def addpin(ctx, command):
-    id = int(command.split()[1])
+    id = int(command)
     message=await ctx.channel.fetch_message(id)
     if await essential.keyexists(key=id, db="pins", key_name="message_id"):
         await essential.removerow(key=id, db="pins", key_name="message_id")
@@ -80,7 +84,7 @@ async def addpin(ctx, command):
         await ctx.channel.send(embed=embed)
         await ctx.channel.send("was deleted")
     else:
-        essential.con.execute(f"INSERT INTO pins (channel, message_id) values (?,?)", (message.channel.id,id))
+        essential.con.execute(f"INSERT INTO pins (channel, message_id, datetime) values (?,?,?)", (message.channel.id,id,int(time.time())))
         essential.con.commit()
         embed=0
         nickname="[Doesn't exist]"

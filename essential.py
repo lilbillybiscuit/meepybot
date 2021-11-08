@@ -5,9 +5,37 @@ import pickle
 
 intents = discord.Intents.default()
 intents.members=True
-client = commands.Bot(command_prefix='?meep ', intents=intents)
+client = commands.Bot(command_prefix=('?meep ', '?mbot ', '?mmod '), intents=intents)
 
 cache=dict()
+
+async def delete_message(guild, channel, message):
+    guild=client.get_guild(guild)
+    if guild is None: return False
+    channel = discord.utils.get(guild.channels, name=int(channel), type="ChannelType.text")
+    if channel is None: return False
+    message=channel.fetch_message(message)
+    if message is None: return False
+    await message.delete()
+    return True
+
+async def get_channel(guild, channel):
+    guild=client.get_guild(guild)
+    if guild is None: return False
+    channel = guild.get_channel(int(channel))
+    return channel
+
+async def get_member(guild, member_id):
+    try:
+        return client.get_guild(guild).get_member(member_id)
+    except: return False
+
+async def get_role(guild, role_id):
+    try:
+        guild = client.get_guild(guild)
+        role = discord.utils.get(guild.roles, name=role_id)
+        return role
+    except: return False
 
 con = sl.connect('meepybot.db')
 
@@ -44,7 +72,7 @@ def setdata(key, val, db="USER"):
   con.execute(sql, data)
   con.commit()
 
-async def getdata(key, db="USER", msg=None):
+async def getdata(key, db="USER", msg=None, retrow=False):
     sql = f"SELECT * FROM {db} WHERE id=:key"
     data = {"key": str(key)}
     cur = con.execute(sql, data)
@@ -53,4 +81,5 @@ async def getdata(key, db="USER", msg=None):
         res = row
         break
     if res == None: return None
+    elif retrow: return res
     return res[1]

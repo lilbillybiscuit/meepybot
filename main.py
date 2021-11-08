@@ -412,8 +412,8 @@ async def on_raw_reaction_add(reaction):
     #channel=discord.utils.get(guild.channels, name=int(reaction.channel_id))
     channel = guild.get_channel(reaction.channel_id)
     message = await channel.fetch_message(message_id)
-    reaction = discord.utils.get(message.reactions, emoji = emojiname)
-    if reaction and reaction.count >= votethreshold:
+    reactionobj = discord.utils.get(message.reactions, emoji = emojiname)
+    if reactionobj and reactionobj.count >= votethreshold:
         if emojiname == '❌':
             await message.delete()
             await channel.send(f"Unmute <@!{action[1]}> was cancelled")

@@ -1,10 +1,4 @@
 **Hi there! This is a bot that likes democracy.**
-This bot currently has key features disabled.
 
 Call me with **?meep**
-
-The following commands are available:
-View this message with **?meep help**
-Mute/unmute someone with **?meep [mute/unmute] [\@someone]**
-Get a random pinned message with **?meep random [optional: number]
-(Mods only) Set options with **?meep set [option] [value]**
+View commands with **?meep help**

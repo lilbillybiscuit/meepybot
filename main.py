@@ -91,7 +91,6 @@ async def getdata(key, msg=None):
     if res == None: return None
     return res[1]
 
-
 @client.command(name="set", pass_context=True, brief="Set Options (Requires \"Manage Roles\"")
 @commands.has_permissions(manage_roles=True)
 async def setoption(ctx, *args):
@@ -149,9 +148,9 @@ async def setoption_error(ctx: commands.Context, error: commands.CommandError):
 
 @client.command(pass_context=True)
 async def version(ctx):
-    await ctx.channel.send("Version v0.2.4 (implemented democracy muting)")
+    await ctx.channel.send("Version v0.2.6 (implemented force muting and updated commands)")
 
-@client.command(pass_context=True)
+@client.command(pass_context=True, brief="Pin a message with its ID")
 @commands.has_permissions(manage_channels=True)
 async def pin(ctx, arg):
     message=ctx.message
@@ -175,7 +174,7 @@ async def pin_error(ctx: commands.Context, error: commands.CommandError):
     await ctx.message.delete(delay=3)
 
 
-@client.command(pass_context=True)
+@client.command(pass_context=True, brief="View bot settings")
 async def options(ctx):
     mes=""
     mes += f"Slowmode Inteval: {await essential.getdata('slowmodetime')}\n"
@@ -198,7 +197,20 @@ async def random2(ctx, arg=None):
     if  arg is not None: await respond.getrandompin2(message, num=int(arg)); return
     else: await respond.getrandompin2(message); return
 
-@client.command(pass_context=True)
+@client.command(pass_context=True, alias = ["funmute"])
+@commands.has_permissions(manage_roles=True)
+async def forceunmute(ctx, arg):
+    message=ctx.message
+    mentions=message.mentions
+    role = discord.utils.get(ctx.guild.roles, name = "text-muted")
+    retstr = "Muted "
+    for member in mentions:
+        await member.add_roles(role)
+        retstr += f"{member.name}#{member.discriminator}, "
+    await ctx.channel.send(retstr[:-2])
+    return
+
+@client.command(pass_context=True, brief="Vote to unmute someone")
 @commands.cooldown(1,10)
 async def unmute(ctx, arg):
     message=ctx.message
@@ -241,12 +253,25 @@ async def unmute(ctx, arg):
 
     print(user)
 
+@client.command(pass_context=True,alias = ["fmute"], brief="Mutes someone without voting (Mods only)")
+@commands.has_permissions(manage_roles=True)
+async def forcemute(ctx, arg):
+    message=ctx.message
+    mentions=message.mentions
+    role = discord.utils.get(ctx.guild.roles, name = "text-muted")
+    retstr = "Muted "
+    for member in mentions:
+        await member.add_roles(role)
+        retstr += f"{member.name}#{member.discriminator}, "
+    await ctx.channel.send(retstr[:-2])
+    return
 
-@client.command(pass_context=True)
+@client.command(pass_context=True, brief="Vote to mute someone")
 @commands.cooldown(1, 10)
 async def mute(ctx, arg):
     message=ctx.message
     user = arg
+    print("Muting: ", user)
     userid = user[3:-1]
     if (user[2]=="&") or (user[0]=='@'):
         # This message was suggested by a friend
@@ -339,15 +364,13 @@ async def on_message(message):
     if tokenized[0] == '?mmod' or tokenized[0] == '?mbot'\
     or tokenized[0] == '?meep':
         command = str(message.content)[6:]
+
         if len(command.split())==0:
+          #await message.channel.send("?meep help", delete_after=0.1)
           await message.channel.send(open('assets/help.txt', 'r').read())
           return
         
         firstword = command.split()[0]
-        if firstword=='help':
-          await message.channel.send(open('assets/help.txt', 'r').read())
-          return
-        
         if firstword == 'log':
           print(str(message))
           await message.channel.send(f"Debug info logged ({randomstring(N=20)})", delete_after=2)
@@ -425,7 +448,7 @@ async def on_raw_reaction_add(reaction):
             elif action[0]=='u':
                 temp=await actions.unmute(int(reaction.guild_id), int(action[1]))
                 if temp:
-                    await channel.send(f"By popular vote, <@!{action[1]} was unmuted")
+                    await channel.send(f"By popular vote, <@!{action[1]}> was unmuted")
                     with con:
                         con.execute("DELETE FROM reqs WHERE id = ? AND action = ?", (res[0], res[1]))
                         con.commit()

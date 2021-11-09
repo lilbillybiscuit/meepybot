@@ -129,7 +129,17 @@ async def setoption(ctx, *args):
         elif key == "mute_duration":
             essential.setdata("mute_duration", str(int(val)))
             await ctx.channel.send(f"Mute duration set to {val}")
-
+        elif key == "bot_mute" or key=="bot_muting":
+            if val.lower()=="true":
+                val=1
+            elif val.lower()=='false':
+                val=0
+            else:
+                await ctx.channel.send("Must be 'true' or 'false'")
+                return
+            essential.setdata('bot_muting', str(val))
+            if val==0:  await ctx.channel.send("Bot muting disabled")
+            elif val==1:await ctx.channel.send("Bot muting enabled")
     except Exception as e:
         print(e)
         await ctx.channel.send(":question: **Something went wrong**", delete_after=3)
@@ -177,10 +187,10 @@ async def pin_error(ctx: commands.Context, error: commands.CommandError):
 @client.command(pass_context=True, brief="View bot settings")
 async def options(ctx):
     mes=""
-    mes += f"Slowmode Inteval: {await essential.getdata('slowmodetime')}\n"
-    mes += f"Vote Timeout: {await essential.getdata('vote_timeout')}\n"
-    mes += f"Vote Threshold: {await essential.getdata('vote_threshold')}\n"
-    mes += f"Mute Duration: {await essential.getdata('mute_duration')}"
+    mes += f"**Slowmode Inteval** (slowmodetime): {await essential.getdata('slowmodetime')}\n"
+    mes += f"**Vote Timeout** (timeout): {await essential.getdata('vote_timeout')}\n"
+    mes += f"**Vote Threshold** (threshold): {await essential.getdata('vote_threshold')}\n"
+    mes += f"**Slowmode/Mute Duration** (mute_duration): {await essential.getdata('mute_duration')}"
     await ctx.channel.send(mes)
 
 @client.command(name="random", pass_context=True, brief="Displays a random pinned message from this channel", aliases=["motd"])
@@ -197,15 +207,15 @@ async def random2(ctx, arg=None):
     if  arg is not None: await respond.getrandompin2(message, num=int(arg)); return
     else: await respond.getrandompin2(message); return
 
-@client.command(pass_context=True, alias = ["funmute"])
+@client.command(pass_context=True, aliases = ["funmute"])
 @commands.has_permissions(manage_roles=True)
 async def forceunmute(ctx, arg):
     message=ctx.message
     mentions=message.mentions
     role = discord.utils.get(ctx.guild.roles, name = "text-muted")
-    retstr = "Muted "
+    retstr = "Unmuted "
     for member in mentions:
-        await member.add_roles(role)
+        await member.remove_roles(role)
         retstr += f"{member.name}#{member.discriminator}, "
     await ctx.channel.send(retstr[:-2])
     return
@@ -254,7 +264,7 @@ async def unmute(ctx, arg):
 
     print(user)
 
-@client.command(pass_context=True,alias = ["fmute"], brief="Mutes someone without voting (Mods only)")
+@client.command(pass_context=True,aliases = ["fmute"], brief="Mutes someone without voting (Mods only)")
 @commands.has_permissions(manage_roles=True)
 async def forcemute(ctx, arg):
     message=ctx.message
@@ -266,6 +276,51 @@ async def forcemute(ctx, arg):
         retstr += f"{member.name}#{member.discriminator}, "
     await ctx.channel.send(retstr[:-2])
     return
+
+@client.command(name="slowmode", aliases=["sm"], pass_context=True, brief="Vote to slowmode someone")
+@commands.cooldown(1,10)
+async def slowmode(ctx, arg):
+    message=ctx.message
+    mentions = message.mentions
+    user = arg
+    userid = mentions[0].id
+    if (user[2]=="&") or (user[0]=='@'):
+        # This message was suggested by a friend
+        await message.channel.send("Are you dumb? Why are you trying to slowmode a role!?")
+        return
+    if await essential.keyexists(f"sm {userid}", db="reqs", key_name="action"):
+        await message.channel.send(f"Request to slowmode {user} already exists")
+        return
+    seconds = await getdata("vote_timeout", msg=message)
+    if seconds == None:
+        await message.channel.send("Database exception occured")
+        return
+    else:
+        seconds = int(seconds)
+    numvotes = await getdata('vote_threshold', msg=message)
+    if numvotes == None:
+        await message.channel.send("Database exception occured")
+        return
+    else:
+        numvotes = int(numvotes)
+
+    sent = await message.channel.send(
+        f"**Slowmode {user}?**\nReact to the two options to vote ({numvotes} votes to slowmode or cancel)\n*Will go away after {seconds} seconds*",
+        delete_after=seconds)
+    await sent.add_reaction("✅")
+    await sent.add_reaction("❌")
+    try:
+        with con:
+            sql = "INSERT INTO reqs (id, channel, action, datetime, guild) values (?,?,?,?,?)"
+            data = (int(sent.id), int(message.channel.id), f'sm {userid} {numvotes}', int(time.time()+seconds), int(message.guild.id))
+            con.execute(sql, data)
+            con.commit()
+    except:
+        await message.channel.send("Something went wrong")
+        await sent.delete()
+
+    print(user)
+
 
 @client.command(pass_context=True, brief="Vote to mute someone")
 @commands.cooldown(1, 10)
@@ -333,7 +388,9 @@ async def on_message(message):
     if message.author == client.user:
         return
     
-    temp=await actions.isslowmoded(message)
+    temp, note=await actions.isslowmoded(message)
+    if note == "mute":
+        await message.delete()
     if temp is not None:
         timeout=await essential.getdata("slowmodetime")
         # Temp represents the time
@@ -430,7 +487,7 @@ async def on_raw_reaction_add(reaction):
     # At this point, there should be an active request
     action = res[1].split()
     votethreshold=None
-    if action[0]=='m' or action[0]=='u':
+    if action[0]=='m' or action[0]=='u' or action[0]=='usm' or action[0]=='sm':
         votethreshold = int(action[2])
     guild = client.get_guild(reaction.guild_id)
     #channel=discord.utils.get(guild.channels, name=int(reaction.channel_id))
@@ -450,6 +507,18 @@ async def on_raw_reaction_add(reaction):
                 temp=await actions.unmute(int(reaction.guild_id), int(action[1]))
                 if temp:
                     await channel.send(f"By popular vote, <@!{action[1]}> was unmuted")
+                    with con:
+                        con.execute("DELETE FROM reqs WHERE id = ? AND action = ?", (res[0], res[1]))
+                        con.commit()
+                else:
+                    await channel.send("Something went wrong")
+            elif action[0]=='sm':
+                await actions.add_slowmode(message_id)
+                return
+            elif action[0]=='usm':
+                temp=await actions.unslowmode(int(reaction.guild_id), int(action[1]))
+                if temp:
+                    await channel.send(f"By popular vote, <@!{action[1]}> was un-slowmoded")
                     with con:
                         con.execute("DELETE FROM reqs WHERE id = ? AND action = ?", (res[0], res[1]))
                         con.commit()

@@ -9,6 +9,7 @@ import time
 import asyncio
 import essential
 import threading
+import oeis
 #from persist_pq import Persist_PQ
 from discord.ext import commands, tasks
 con = essential.con
@@ -285,6 +286,23 @@ async def unmute(ctx, arg):
         await sent.delete()
 
     print(user)
+
+@client.command(name= "oeis", pass_context=True)
+async def oeis1(ctx, arg=None):
+    try:
+        data=0
+        if arg is None:
+            data=await oeis.getinfo(oeis.randomid())
+        else:
+            arg=int(arg)
+            if not (arg>0 and arg<oeis.max_id):
+                data = oeis.getinfo(arg)
+            data=await oeis.getinfo(oeis.randomid())
+        embed = discord.Embed(title=f"{data[0]}", description=data[1])
+        await ctx.channel.send(embed=embed)
+
+    except:
+        await ctx.channel.send("Something went wrong...")
 
 @client.command(pass_context=True,aliases = ["fmute"], brief="Mutes someone without voting (Mods only)")
 @commands.has_permissions(manage_roles=True)

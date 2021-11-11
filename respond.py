@@ -85,8 +85,7 @@ async def addpin(ctx, command):
             embed.set_image(url=message.attachments[0].url)
         else:
             embed = discord.Embed(title=f"{nickname}:", description=message.content)
-        await ctx.channel.send(embed=embed)
-        await ctx.channel.send("was saved")
+        await ctx.channel.send("**Pinned:**", embed=embed)
 
 async def unpin(ctx, command):
     id = int(command)
@@ -103,8 +102,7 @@ async def unpin(ctx, command):
         embed.set_image(url=message.attachments[0].url)
     else:
         embed = discord.Embed(title=f"{nickname}:", description=message.content)
-    await ctx.channel.send(embed=embed)
-    await ctx.channel.send("was deleted")
+    await ctx.channel.send("**Unpinned:**", embed=embed)
 
 async def pullpins(ctx):
     channel=ctx.channel

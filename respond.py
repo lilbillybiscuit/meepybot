@@ -68,21 +68,9 @@ async def getrandompin(ctx, num=None):
 async def addpin(ctx, command):
     id = int(command)
     message=await ctx.channel.fetch_message(id)
+
     if await essential.keyexists(key=id, db="pins", key_name="message_id"):
-        await essential.removerow(key=id, db="pins", key_name="message_id")
-        embed=0
-        nickname="[Doesn't exist]"
-        try:
-            nickname=ctx.channel.guild.get_member(message.author.id).nick
-        except:
-            nothing=4
-        if message.attachments:
-            embed = discord.Embed(title=f"{nickname}:", description=message.content)
-            embed.set_image(url=message.attachments[0].url)
-        else:
-            embed = discord.Embed(title=f"{nickname}:", description=message.content)
-        await ctx.channel.send(embed=embed)
-        await ctx.channel.send("was deleted")
+        await ctx.channel.send("Pin already exists", delete_after=3)
     else:
         essential.con.execute(f"INSERT INTO pins (channel, message_id, datetime) values (?,?,?)", (message.channel.id,id,int(time.time())))
         essential.con.commit()
@@ -99,6 +87,24 @@ async def addpin(ctx, command):
             embed = discord.Embed(title=f"{nickname}:", description=message.content)
         await ctx.channel.send(embed=embed)
         await ctx.channel.send("was saved")
+
+async def unpin(ctx, command):
+    id = int(command)
+    message=await ctx.channel.fetch_message(id)
+    await essential.removerow(key=id, db="pins", key_name="message_id")
+    embed=0
+    nickname="[Doesn't exist]"
+    try:
+        nickname=ctx.channel.guild.get_member(message.author.id).nick
+    except:
+        nothing=4
+    if message.attachments:
+        embed = discord.Embed(title=f"{nickname}:", description=message.content)
+        embed.set_image(url=message.attachments[0].url)
+    else:
+        embed = discord.Embed(title=f"{nickname}:", description=message.content)
+    await ctx.channel.send(embed=embed)
+    await ctx.channel.send("was deleted")
 
 async def pullpins(ctx):
     channel=ctx.channel

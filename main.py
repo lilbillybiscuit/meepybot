@@ -25,10 +25,8 @@ def randomstring(N=40):
     ''.join(random.SystemRandom().choice(string.ascii_uppercase +
                                          string.digits) for _ in range(N))
 
-
 async def sendmessage(message, msg):
     await message.channel.send(msg)
-
 
 async def configure(str1, msg=None):
     # Change meepybot settings here
@@ -161,9 +159,13 @@ async def version(ctx):
     await ctx.channel.send("Version v0.2.6 (implemented force muting and updated commands)")
 
 @client.command(pass_context=True, brief="Pin a message with its ID")
-@commands.has_permissions(manage_channels=True)
-async def pin(ctx, arg):
+#@commands.has_permissions(manage_channels=True)
+async def pin(ctx, arg=None):
     message=ctx.message
+    if message.reference is not None:
+        arg=message.reference.message_id
+    elif arg is None:
+        await message.channel.send("Reply or ID required")
     try:
         await respond.addpin(message, int(arg))
     except Exception as e:
@@ -173,8 +175,30 @@ async def pin(ctx, arg):
 @pin.error
 async def pin_error(ctx: commands.Context, error: commands.CommandError):
     print(error)
+    message = "Something went wrong..."
+
+    await ctx.send(message, delete_after=3)
+    await ctx.message.delete(delay=3)
+
+@client.command(pass_context=True, brief="Unpin a message with its ID")
+@commands.has_permissions(manage_channels=True)
+async def unpin(ctx, arg=None):
+    message=ctx.message
+    if message.reference is not None:
+        arg=message.reference.message_id
+    elif arg is None:
+        await message.channel.send("Reply or ID required")
+    try:
+        await respond.unpin(message, int(arg))
+    except Exception as e:
+        print(e)
+        await message.channel.send("Something went wrong...")
+    return
+@unpin.error
+async def unpin_error(ctx: commands.Context, error: commands.CommandError):
+    print(error)
     if isinstance(error, commands.MissingAnyRole):
-        message = "Pinning requires 'mod' or 'Admin'"
+        message = "Unpinning requires 'mod' or 'Admin'"
     elif isinstance(error, commands.MissingPermissions):
         message = "\"Manage Channels\" required"
     else:
@@ -182,8 +206,6 @@ async def pin_error(ctx: commands.Context, error: commands.CommandError):
 
     await ctx.send(message, delete_after=3)
     await ctx.message.delete(delay=3)
-
-
 @client.command(pass_context=True, brief="View bot settings")
 async def options(ctx):
     mes=""
@@ -527,6 +549,5 @@ async def on_raw_reaction_add(reaction):
     #print(str(reaction))
     #print(str(reaction.emoji))
     #print(str(reaction.message_id))
-
 
 client.run(os.getenv('TOKEN'))

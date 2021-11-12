@@ -157,7 +157,7 @@ async def setoption_error(ctx: commands.Context, error: commands.CommandError):
 
 @client.command(pass_context=True)
 async def version(ctx):
-    await ctx.channel.send("Version v0.2.7 (Pin/unpin command enhancements)")
+    await ctx.channel.send("Version v0.2.8 (Include OEIS)")
 
 @client.command(pass_context=True, brief="Pin a message with its ID")
 #@commands.has_permissions(manage_channels=True)

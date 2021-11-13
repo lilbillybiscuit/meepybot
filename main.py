@@ -90,6 +90,48 @@ async def getdata(key, msg=None):
     if res == None: return None
     return res[1]
 
+
+
+@client.command(name="delete")
+@commands.has_permissions(manage_channels=True)
+async def deletemessages(ctx, num=None, person=None):
+    if not num == None:# and person==None:
+        try: 
+            num = int(num)
+            if num>50 or num<0:
+                raise ValueError
+        except:
+            await ctx.channel.send("Specify a number <= 50")
+            return
+        try:
+            for x in await ctx.channel.history(limit=num).flatten():
+                await x.delete()
+        except Exception as e:
+            print(e)
+        await ctx.channel.send(f"Deleted last {num} messages from this channel")
+        return
+    elif not num == None and not person == None:
+        try:
+            num = int(num)
+            if num>50 or num<0:
+                raise ValueError
+            member = ctx.message.mentions[0]
+            if member is None:
+                raise ValueError
+        except:
+            await ctx.channel.send("Specify a number <= 50, second argument has to be a ping")
+            return
+        try:
+            for x in await ctx.channel.history(limit=num).flatten():
+                if x.user == member:
+                    await x.delete()
+
+        except:
+            hi=4
+        await ctx.channel.send(f"Deleted last {num} messages from <@!{member.id}> from this channel")
+    else:
+        await ctx.channel.send("Specify a number of messages to delete")
+    
 @client.command(name="set", pass_context=True, brief="Set Options (Requires \"Manage Roles\"")
 @commands.has_permissions(manage_roles=True)
 async def setoption(ctx, *args):
@@ -222,7 +264,7 @@ async def random1(ctx, arg=None):
     #print("Through client.command")
     if arg == None: await respond.getrandompin(message, num=int(arg)); return
     else: await respond.getrandompin(message); return
-''''
+'''
 @client.command(name="random2", alias=["random"],pass_context=True, brief="Displays a random pinned message from this channel(v2)")
 async def random2(ctx, arg=None):
     message=ctx.message

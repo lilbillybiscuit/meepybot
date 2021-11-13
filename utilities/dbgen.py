@@ -12,14 +12,14 @@ with con:
     except:
         print("Error handling database reqs")
     try:
-        con.execute("CREATE TABLE pins (channel INTEGER, message_id INTEGER, datetime INTEGER); ")
+        con.execute("CREATE TABLE pins (channel INTEGER, message_id INTEGER, datetime INTEGER, additional_pins VARCHAR(100)); ")
     except:
         print("Error handling database pins")
     try:
         con.execute("CREATE TABLE slowmoded (user_id INTEGER, channel INTEGER, datetime INTEGER, slowmode_time);")
     except:
         print("Error handling database slowmoded")
-    
+
     try:
         con.execute("CREATE TABLE strikes (user_id INTEGER, guild_id INTEGER, strikes INTEGER, UNIQUE (user_id, guild_id))")
     except:

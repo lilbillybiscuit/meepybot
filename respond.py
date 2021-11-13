@@ -17,7 +17,8 @@ async def getrandompin2(ctx, arg=None):
     for row in res:
         res=row
         break
-    message=await ctx.channel.fetch_message(res[1])
+    message=[await ctx.channel.fetch_message(res[1])]
+
     embed=0
     nickname="[Doesn't exist]"
     try:

@@ -25,10 +25,12 @@ async def getrandompin2(ctx, arg=None):
     except:
         nothing=4
     if message.attachments:
-        embed = discord.Embed(title=f"{nickname} said:", description=message.content)
+        embed = discord.Embed(description=message.content)
         embed.set_image(url=message.attachments[0].url)
     else:
-        embed = discord.Embed(title=f"{nickname} said:", description=message.content)
+        embed = discord.Embed(description=message.content)
+
+    embed.set_author(name=message.author.nick, icon_url=ctx.author.avatar_url)
 
     await ctx.channel.send(embed=embed)
     return
@@ -57,10 +59,11 @@ async def getrandompin(ctx, num=None):
   except:
       nothing=4
   if message.attachments:
-    embed = discord.Embed(title=f"{nickname} said:", description=message.content)
-    embed.set_image(url=message.attachments[0].url)
+        embed = discord.Embed(description=message.content)
+        embed.set_image(url=message.attachments[0].url)
   else:
-    embed = discord.Embed(title=f"{nickname} said:", description=message.content)
+      embed = discord.Embed(description=message.content)
+  embed.set_author(name=message.author.nick, icon_url=ctx.author.avatar_url)
 
   await ctx.channel.send(embed=embed)
   return
@@ -81,10 +84,13 @@ async def addpin(ctx, command):
         except:
             nothing=4
         if message.attachments:
-            embed = discord.Embed(title=f"{nickname}:", description=message.content)
+            embed = discord.Embed(description=message.content)
             embed.set_image(url=message.attachments[0].url)
         else:
-            embed = discord.Embed(title=f"{nickname}:", description=message.content)
+            embed = discord.Embed(description=message.content)
+
+        embed.set_author(name=message.author.nick, icon_url=ctx.author.avatar_url)
+
         await ctx.channel.send("**Pinned:**", embed=embed)
 
 async def unpin(ctx, command):
@@ -98,10 +104,12 @@ async def unpin(ctx, command):
     except:
         nothing=4
     if message.attachments:
-        embed = discord.Embed(title=f"{nickname}:", description=message.content)
+        embed = discord.Embed(description=message.content)
         embed.set_image(url=message.attachments[0].url)
     else:
-        embed = discord.Embed(title=f"{nickname}:", description=message.content)
+        embed = discord.Embed(description=message.content)
+
+    embed.set_author(name=message.author.nick, icon_url=ctx.author.avatar_url)
     await ctx.channel.send("**Unpinned:**", embed=embed)
 
 async def pullpins(ctx):

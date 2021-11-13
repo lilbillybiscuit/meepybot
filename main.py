@@ -52,7 +52,7 @@ async def configure(str1, msg=None):
           return
       with con:
           essential.setdata('vote_timeout', str(int(val)))
-          if msg is not None:
+          if not msg == None:
               await msg.channel.send(f"Vote timeout set to {val} seconds")
     elif key == "slowmoderole":
         if essential.keyexists("slowmoderole"):
@@ -61,7 +61,7 @@ async def configure(str1, msg=None):
             return
         with con:
             essential.setdata('vote_timeout', str(int(val)))
-            if msg is not None:
+            if not msg == None:
                 await msg.channel.send(f"Vote timeout set to {val} seconds")
 
 
@@ -157,13 +157,13 @@ async def setoption_error(ctx: commands.Context, error: commands.CommandError):
 
 @client.command(pass_context=True)
 async def version(ctx):
-    await ctx.channel.send("Version v0.2.8 (Include OEIS)")
+    await ctx.channel.send("Version v0.2.9 (Unslowmode Voting and updated embed layout)")
 
 @client.command(pass_context=True, brief="Pin a message with its ID")
 #@commands.has_permissions(manage_channels=True)
 async def pin(ctx, arg=None):
     message=ctx.message
-    if message.reference is not None:
+    if not message.reference == None:
         arg=message.reference.message_id
     elif arg is None:
         await message.channel.send("Reply or ID required")
@@ -185,7 +185,7 @@ async def pin_error(ctx: commands.Context, error: commands.CommandError):
 @commands.has_permissions(manage_channels=True)
 async def unpin(ctx, arg=None):
     message=ctx.message
-    if message.reference is not None:
+    if not message.reference == None:
         arg=message.reference.message_id
     elif arg is None:
         await message.channel.send("Reply or ID required")
@@ -220,14 +220,14 @@ async def options(ctx):
 async def random1(ctx, arg=None):
     message=ctx.message
     #print("Through client.command")
-    if  arg is not None: await respond.getrandompin(message, num=int(arg)); return
+    if arg == None: await respond.getrandompin(message, num=int(arg)); return
     else: await respond.getrandompin(message); return
 
 @client.command(name="random2", pass_context=True, brief="Displays a random pinned message from this channel(v2)")
 async def random2(ctx, arg=None):
     message=ctx.message
     print("Through client.command")
-    if  arg is not None: await respond.getrandompin2(message, num=int(arg)); return
+    if not arg == None: await respond.getrandompin2(message, num=int(arg)); return
     else: await respond.getrandompin2(message); return
 
 @client.command(pass_context=True, aliases = ["funmute"])
@@ -361,6 +361,49 @@ async def slowmode(ctx, arg):
 
     print(user)
 
+@client.command(name="unslowmode", aliases=["usm"], pass_context=True, brief="Vote to remove slowmode from someone")
+@commands.cooldown(1,10)
+async def unslowmode(ctx, arg):
+    message=ctx.message
+    mentions = message.mentions
+    user = arg
+    userid = mentions[0].id
+    if (user[2]=="&") or (user[0]=='@'):
+        # This message was suggested by a friend
+        await message.channel.send("Are you dumb? Why are you trying to unslowmode a role!?")
+        return
+    if await essential.keyexists(f"usm {userid}", db="reqs", key_name="action"):
+        await message.channel.send(f"Request to unslowmode {user} already exists")
+        return
+    seconds = await getdata("vote_timeout", msg=message)
+    if seconds == None:
+        await message.channel.send("Database exception occured")
+        return
+    else:
+        seconds = int(seconds)
+    numvotes = await getdata('vote_threshold', msg=message)
+    if numvotes == None:
+        await message.channel.send("Database exception occured")
+        return
+    else:
+        numvotes = int(numvotes)
+
+    sent = await message.channel.send(
+        f"**Unslowmode {user}?**\nReact to the two options to vote ({numvotes} votes to unslowmode or cancel)\n*Will go away after {seconds} seconds*",
+        delete_after=seconds)
+    await sent.add_reaction("✅")
+    await sent.add_reaction("❌")
+    try:
+        with con:
+            sql = "INSERT INTO reqs (id, channel, action, datetime, guild) values (?,?,?,?,?)"
+            data = (int(sent.id), int(message.channel.id), f'usm {userid} {numvotes}', int(time.time()+seconds), int(message.guild.id))
+            con.execute(sql, data)
+            con.commit()
+    except:
+        await message.channel.send("Something went wrong")
+        await sent.delete()
+
+    print(user)
 
 @client.command(pass_context=True, brief="Vote to mute someone")
 @commands.cooldown(1, 10)
@@ -431,7 +474,7 @@ async def on_message(message):
     temp, note=await actions.isslowmoded(message)
     if note == "mute":
         await message.delete()
-    if temp is not None:
+    if not temp == None:
         timeout=await essential.getdata("slowmodetime")
         # Temp represents the time
         #print(time.time(), temp, int(timeout))

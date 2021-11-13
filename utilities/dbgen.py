@@ -19,7 +19,11 @@ with con:
         con.execute("CREATE TABLE slowmoded (user_id INTEGER, channel INTEGER, datetime INTEGER, slowmode_time);")
     except:
         print("Error handling database slowmoded")
-
+    
+    try:
+        con.execute("CREATE TABLE strikes (user_id INTEGER, guild_id INTEGER, strikes INTEGER, UNIQUE (user_id, guild_id))")
+    except:
+        print("Error handling database strikes")
 data=[
   ("vote_threshold", 6),
   ("vote_timeout", 300),

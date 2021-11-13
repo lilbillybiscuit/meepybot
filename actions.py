@@ -181,3 +181,17 @@ async def unmute(guild, member_id):
         return True
     except:
         return False
+
+async def strike(member_id, guild_id):
+    sql = "SELECT * FROM strikes WHERE user_id=? AND guild_id=?"
+    res=0
+    with con:
+        hi = con.execute(sql, (int(member_id), guild_id))
+        res=None
+        for row in hi:
+            res=row
+            break
+        if res == None:
+            return
+    maxstrikes=await essential.getdata("strike_limit")
+        

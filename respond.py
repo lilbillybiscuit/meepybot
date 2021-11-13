@@ -30,7 +30,7 @@ async def getrandompin2(ctx, arg=None):
     else:
         embed = discord.Embed(description=message.content)
 
-    embed.set_author(name=message.author.nick, icon_url=ctx.author.avatar_url)
+    embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
 
     await ctx.channel.send(embed=embed)
     return
@@ -63,7 +63,7 @@ async def getrandompin(ctx, num=None):
         embed.set_image(url=message.attachments[0].url)
   else:
       embed = discord.Embed(description=message.content)
-  embed.set_author(name=message.author.nick, icon_url=ctx.author.avatar_url)
+  embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
 
   await ctx.channel.send(embed=embed)
   return
@@ -89,7 +89,7 @@ async def addpin(ctx, command):
         else:
             embed = discord.Embed(description=message.content)
 
-        embed.set_author(name=message.author.nick, icon_url=ctx.author.avatar_url)
+        embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
 
         await ctx.channel.send("**Pinned:**", embed=embed)
 
@@ -109,7 +109,7 @@ async def unpin(ctx, command):
     else:
         embed = discord.Embed(description=message.content)
 
-    embed.set_author(name=message.author.nick, icon_url=ctx.author.avatar_url)
+    embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
     await ctx.channel.send("**Unpinned:**", embed=embed)
 
 async def pullpins(ctx):

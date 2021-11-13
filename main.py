@@ -215,15 +215,15 @@ async def options(ctx):
     mes += f"**Vote Threshold** (threshold): {await essential.getdata('vote_threshold')}\n"
     mes += f"**Slowmode/Mute Duration** (mute_duration): {await essential.getdata('mute_duration')}"
     await ctx.channel.send(mes)
-
+'''
 @client.command(name="random", pass_context=True, brief="Displays a random pinned message from this channel", aliases=["motd"])
 async def random1(ctx, arg=None):
     message=ctx.message
     #print("Through client.command")
     if arg == None: await respond.getrandompin(message, num=int(arg)); return
     else: await respond.getrandompin(message); return
-
-@client.command(name="random2", pass_context=True, brief="Displays a random pinned message from this channel(v2)")
+''''
+@client.command(name="random2", alias=["random"],pass_context=True, brief="Displays a random pinned message from this channel(v2)")
 async def random2(ctx, arg=None):
     message=ctx.message
     print("Through client.command")

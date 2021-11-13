@@ -10,6 +10,7 @@ import asyncio
 import essential
 import threading
 import oeis
+
 #from persist_pq import Persist_PQ
 from discord.ext import commands, tasks
 con = essential.con
@@ -199,7 +200,7 @@ async def setoption_error(ctx: commands.Context, error: commands.CommandError):
 
 @client.command(pass_context=True)
 async def version(ctx):
-    await ctx.channel.send("Version v0.2.9 (Unslowmode Voting and updated embed layout)")
+    await ctx.channel.send("Version v0.2.10 (Search in OEIS)")
 
 @client.command(pass_context=True, brief="Pin a message with its ID")
 #@commands.has_permissions(manage_channels=True)
@@ -265,7 +266,7 @@ async def random1(ctx, arg=None):
     if arg == None: await respond.getrandompin(message, num=int(arg)); return
     else: await respond.getrandompin(message); return
 '''
-@client.command(name="random2", alias=["random"],pass_context=True, brief="Displays a random pinned message from this channel(v2)")
+@client.command(name="random", aliases=["random2"],pass_context=True, brief="Displays a random pinned message from this channel(v2)")
 async def random2(ctx, arg=None):
     message=ctx.message
     print("Through client.command")
@@ -330,19 +331,32 @@ async def unmute(ctx, arg):
     print(user)
 
 @client.command(name= "oeis", pass_context=True)
-async def oeis1(ctx, arg=None):
+async def oeis1(ctx, arg=None, *args2):
     try:
         data=0
         if arg is None:
             data=await oeis.getinfo(oeis.randomid())
-        else:
+        elif not str(arg) in ["search", "sequence", "find", "s"]:
             arg=int(arg)
-            if not (arg>0 and arg<oeis.max_id):
-                data = oeis.getinfo(arg)
-            data=await oeis.getinfo(oeis.randomid())
+            if (arg>0 and arg<oeis.max_id):
+                data = await oeis.getinfo(arg)
+            else:
+                data=await oeis.getinfo(oeis.randomid())
+        else:
+            tempstr=""
+            for hi in args2:
+                tempstr+=hi+" "
+            seq = await essential.extractnumbers(tempstr)
+            searchstr=""
+            for i in range(len(seq)):
+                if not i==0: searchstr+="+"
+                searchstr+=str(seq[i])
+            data = await oeis.getinfofromsequence(searchstr)
+                
         embed = discord.Embed(title=f"{data[0]}", description=data[1])
         await ctx.channel.send(embed=embed)
-
+        
+            
     except:
         await ctx.channel.send("Something went wrong...")
 
@@ -652,5 +666,11 @@ async def on_raw_reaction_add(reaction):
     #print(str(reaction))
     #print(str(reaction.emoji))
     #print(str(reaction.message_id))
+
+from dotenv import load_dotenv
+try:
+    load_dotenv()
+except:
+    nothing=5
 
 client.run(os.getenv('TOKEN'))

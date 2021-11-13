@@ -2,7 +2,7 @@ import sqlite3 as sl
 import discord
 from discord.ext import commands
 import pickle
-
+import re
 intents = discord.Intents.default()
 intents.members=True
 client = commands.Bot(command_prefix=('?meep ', '?mbot ', '?mmod '), intents=intents)
@@ -83,3 +83,6 @@ async def getdata(key, db="USER", msg=None, retrow=False):
     if res == None: return None
     elif retrow: return res
     return res[1]
+
+async def extractnumbers(str1):
+    return [int(s) for s in re.findall(r'\b\d+\b', str(str1))]

@@ -17,57 +17,80 @@ async def getrandompin2(ctx, arg=None):
     for row in res:
         res=row
         break
-    message=[await ctx.channel.fetch_message(res[1])]
+    messages=[await ctx.channel.fetch_message(res[1])]
+    message=messages[0]
+    embed=0
+    nickname="[Doesn't exist]"
+    try:
+        nickname=ctx.channel.guild.get_member(message.author.id).nick
+    except Exception as e:
+        print(e)
+        nothing=4
+    
+    #Message embed code starts here
+    otherattachment=False
+    if message.attachments:
+        if "image" in message.attachments[0].content_type:
+            embed = discord.Embed(description=message.content)
+            embed.set_image(url=message.attachments[0].url)
+        else:
+            embed = discord.Embed(description=message.content)
+            otherattachment = True
+    else:
+        embed = discord.Embed(description=message.content)
+    
+    embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
+    embed.add_field(name='\u200B', value=f"\n[Message ID: {id}]({message.jump_url})")
+    if otherattachment:
+        await ctx.channel.send(embed=embed, files=[await f.to_file() for f in message.attachments])
+    else:
+        await ctx.channel.send(embed=embed) 
+    return
 
+async def getrandompin(ctx, num=None):
+    '''pins=0
+    cachepath=f"cache/pincache_{ctx.channel.id}"
+    if os.path.exists(cachepath):
+        with open(cachepath, 'rb') as f:
+        pins=pickle.load(f)
+    else:
+        await essential.refresh_pin_cache(ctx)'''
+    pins = list(await ctx.channel.pins())
+    if len(pins) == 0:
+        await ctx.channel.send("No pins exist")
+        return
+    message=0
+    if num is not None and int(num)<len(pins):
+        message=pins[len(pins)-int(num)-1]
+    else:
+        message=random.choice(pins)
     embed=0
     nickname="[Doesn't exist]"
     try:
         nickname=ctx.channel.guild.get_member(message.author.id).nick
     except:
         nothing=4
+    
+    #Message embed code starts here
+    otherattachment=False
     if message.attachments:
-        embed = discord.Embed(description=message.content)
-        embed.set_image(url=message.attachments[0].url)
+        if "image" in message.attachments[0].content_type:
+            embed = discord.Embed(description=message.content)
+            embed.set_image(url=message.attachments[0].url)
+        else:
+            embed = discord.Embed(description=message.content)
+            otherattachment = True
     else:
         embed = discord.Embed(description=message.content)
 
     embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
+    embed.add_field(name='\u200B', value=f"\n[Message ID: {id}]({message.jump_url})")
 
-    await ctx.channel.send(embed=embed)
+    if otherattachment:
+        await ctx.channel.send(embed=embed, files=[await f.to_file() for f in message.attachments])
+    else:
+        await ctx.channel.send(embed=embed) 
     return
-
-async def getrandompin(ctx, num=None):
-  '''pins=0
-  cachepath=f"cache/pincache_{ctx.channel.id}"
-  if os.path.exists(cachepath):
-    with open(cachepath, 'rb') as f:
-      pins=pickle.load(f)
-  else:
-    await essential.refresh_pin_cache(ctx)'''
-  pins = list(await ctx.channel.pins())
-  if len(pins) == 0:
-    await ctx.channel.send("No pins exist")
-    return
-  message=0
-  if num is not None and int(num)<len(pins):
-    message=pins[len(pins)-int(num)-1]
-  else:
-    message=random.choice(pins)
-  embed=0
-  nickname="[Doesn't exist]"
-  try:
-      nickname=ctx.channel.guild.get_member(message.author.id).nick
-  except:
-      nothing=4
-  if message.attachments:
-        embed = discord.Embed(description=message.content)
-        embed.set_image(url=message.attachments[0].url)
-  else:
-      embed = discord.Embed(description=message.content)
-  embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
-
-  await ctx.channel.send(embed=embed)
-  return
 
 async def addpin(ctx, command):
     id = int(command)
@@ -84,15 +107,24 @@ async def addpin(ctx, command):
             nickname=ctx.channel.guild.get_member(message.author.id).nick
         except:
             nothing=4
+        #Message embed code starts here
+        otherattachment=False
         if message.attachments:
-            embed = discord.Embed(description=message.content)
-            embed.set_image(url=message.attachments[0].url)
+            if "image" in message.attachments[0].content_type:
+                embed = discord.Embed(description=message.content)
+                embed.set_image(url=message.attachments[0].url)
+            else:
+                embed = discord.Embed(description=message.content)
+                otherattachment = True
         else:
             embed = discord.Embed(description=message.content)
-
+        
         embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
-
-        await ctx.channel.send("**Pinned:**", embed=embed)
+        embed.add_field(name='\u200B', value=f"\n[Message ID: {id}]({message.jump_url})")
+        if otherattachment:
+            await ctx.channel.send("**Pinned:**",embed=embed, files=[await f.to_file() for f in message.attachments])
+        else:
+            await ctx.channel.send("**Pinned:**",embed=embed)
 
 async def unpin(ctx, command):
     id = int(command)
@@ -104,14 +136,25 @@ async def unpin(ctx, command):
         nickname=ctx.channel.guild.get_member(message.author.id).nick
     except:
         nothing=4
+    #Message embed code starts here
+    otherattachment=False
     if message.attachments:
-        embed = discord.Embed(description=message.content)
-        embed.set_image(url=message.attachments[0].url)
+        if "image" in message.attachments[0].content_type:
+            embed = discord.Embed(description=message.content)
+            embed.set_image(url=message.attachments[0].url)
+        else:
+            embed = discord.Embed(description=message.content)
+            otherattachment = True
     else:
         embed = discord.Embed(description=message.content)
-
+    
     embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
-    await ctx.channel.send("**Unpinned:**", embed=embed)
+    embed.add_field(name='\u200B', value=f"\n[Message ID: {id}]({message.jump_url})")
+
+    if otherattachment:
+        await ctx.channel.send("**Unpinned:**",embed=embed, files=[await f.to_file() for f in message.attachments])
+    else:
+        await ctx.channel.send("**Unpinned:**",embed=embed) 
 
 async def pullpins(ctx):
     channel=ctx.channel

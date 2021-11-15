@@ -91,7 +91,15 @@ async def getdata(key, msg=None):
     if res == None: return None
     return res[1]
 
-
+@client.command(pass_context=True)
+@commands.has_permissions(manage_roles=True)
+@commands.cooldown(1, 21600)
+async def zipavatars(ctx):
+    try:
+        await actions.zipavatars(ctx)
+    except Exception as e:
+        print(e)
+        await ctx.channel.send("Something went wrong...")
 
 @client.command(name="delete")
 @commands.has_permissions(manage_channels=True)

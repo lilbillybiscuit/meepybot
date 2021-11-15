@@ -131,3 +131,4 @@ dmypy.json
 meepybot.db
 meepy.pq
 meepy1.pq
+cache/**

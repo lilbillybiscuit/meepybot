@@ -4,6 +4,8 @@ import essential
 import time
 import sqlite3 as sl
 import asyncio
+import os
+import shutil
 client = essential.client
 con = essential.con
 from discord.ext import tasks
@@ -195,3 +197,31 @@ async def strike(member_id, guild_id):
             return
     maxstrikes=await essential.getdata("strike_limit")
         
+
+async def zipavatars(ctx):
+    preparing = await ctx.channel.send("Preparing avatars for compression...")
+    memiter = ctx.guild.members
+    avatars=[]
+    folderpath=f'cache/avatars-{ctx.guild.id}'
+    try:
+        shutil.rmtree(folderpath)
+    except: pass
+    try:
+        os.makedirs(folderpath)
+    except: pass
+    
+    for member in memiter:
+        await member.avatar_url.save(f'{folderpath}/{member.id}.png')
+    
+    try:
+        os.remove("cache/avatars-{ctx.guild.id}.zip")
+    except: pass
+
+    await preparing.edit(content="Zipping Avatars...")
+    shutil.make_archive(f"cache/avatars-{ctx.guild.id}", 'zip', folderpath+"/")
+    await preparing.edit(content="Successfully compressed!", delete_after=3)
+    
+    sendzip = discord.File(f"cache/avatars-{ctx.guild.id}.zip")
+    
+    await ctx.channel.send("**Successfully compressed everyone's profile pictures**", file=sendzip)
+    return

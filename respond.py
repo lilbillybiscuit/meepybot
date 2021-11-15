@@ -40,7 +40,7 @@ async def getrandompin2(ctx, arg=None):
         embed = discord.Embed(description=message.content)
     
     embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
-    embed.add_field(name='\u200B', value=f"\n[Message ID: {id}]({message.jump_url})")
+    embed.add_field(name='\u200B', value=f"\n[Message ID: {message.id}]({message.jump_url})")
     if otherattachment:
         await ctx.channel.send(embed=embed, files=[await f.to_file() for f in message.attachments])
     else:
@@ -84,7 +84,7 @@ async def getrandompin(ctx, num=None):
         embed = discord.Embed(description=message.content)
 
     embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
-    embed.add_field(name='\u200B', value=f"\n[Message ID: {id}]({message.jump_url})")
+    embed.add_field(name='\u200B', value=f"\n[Message ID: {message.id}]({message.jump_url})")
 
     if otherattachment:
         await ctx.channel.send(embed=embed, files=[await f.to_file() for f in message.attachments])
@@ -120,7 +120,7 @@ async def addpin(ctx, command):
             embed = discord.Embed(description=message.content)
         
         embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
-        embed.add_field(name='\u200B', value=f"\n[Message ID: {id}]({message.jump_url})")
+        embed.add_field(name='\u200B', value=f"\n[Message ID: {message.id}]({message.jump_url})")
         if otherattachment:
             await ctx.channel.send("**Pinned:**",embed=embed, files=[await f.to_file() for f in message.attachments])
         else:
@@ -149,7 +149,7 @@ async def unpin(ctx, command):
         embed = discord.Embed(description=message.content)
     
     embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
-    embed.add_field(name='\u200B', value=f"\n[Message ID: {id}]({message.jump_url})")
+    embed.add_field(name='\u200B', value=f"\n[Message ID: {message.id}]({message.jump_url})")
 
     if otherattachment:
         await ctx.channel.send("**Unpinned:**",embed=embed, files=[await f.to_file() for f in message.attachments])

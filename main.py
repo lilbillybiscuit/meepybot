@@ -91,7 +91,7 @@ async def getdata(key, msg=None):
     if res == None: return None
     return res[1]
 
-@client.command(pass_context=True)
+@client.command(name="zipavatars", pass_context=True)
 @commands.has_permissions(manage_roles=True)
 @commands.cooldown(1, 21600)
 async def zipavatars(ctx):

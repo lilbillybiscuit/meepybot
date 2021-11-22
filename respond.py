@@ -4,6 +4,7 @@ import essential
 import pickle
 import os
 import time
+import hashlib
 
 client = essential.client
 
@@ -92,7 +93,7 @@ async def getrandompin(ctx, num=None):
         await ctx.channel.send(embed=embed) 
     return
 
-async def addpin(ctx, command):
+async def addsinglepin(ctx, command):
     id = int(command)
     message=await ctx.channel.fetch_message(id)
 
@@ -107,6 +108,106 @@ async def addpin(ctx, command):
             nickname=ctx.channel.guild.get_member(message.author.id).nick
         except:
             nothing=4
+        #Message embed code starts here
+        otherattachment=False
+        if message.attachments:
+            if "image" in message.attachments[0].content_type:
+                embed = discord.Embed(description=message.content)
+                embed.set_image(url=message.attachments[0].url)
+            else:
+                embed = discord.Embed(description=message.content)
+                otherattachment = True
+        else:
+            embed = discord.Embed(description=message.content)
+        
+        embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
+        embed.add_field(name='\u200B', value=f"\n[Message ID: {message.id}]({message.jump_url})")
+        if otherattachment:
+            await ctx.channel.send("**Pinned:**",embed=embed, files=[await f.to_file() for f in message.attachments])
+        else:
+            await ctx.channel.send("**Pinned:**",embed=embed)
+
+async def unpin(ctx, command):
+    id = int(command)
+    message=await ctx.channel.fetch_message(id)
+    await essential.removerow(key=id, db="pins", key_name="message_id")
+    embed=0
+    nickname="[Doesn't exist]"
+    try:
+        nickname=ctx.channel.guild.get_member(message.author.id).nick
+    except:
+        nothing=4
+    #Message embed code starts here
+    otherattachment=False
+    if message.attachments:
+        if "image" in message.attachments[0].content_type:
+            embed = discord.Embed(description=message.content)
+            embed.set_image(url=message.attachments[0].url)
+        else:
+            embed = discord.Embed(description=message.content)
+            otherattachment = True
+    else:
+        embed = discord.Embed(description=message.content)
+    
+    embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
+    embed.add_field(name='\u200B', value=f"\n[Message ID: {message.id}]({message.jump_url})")
+
+    if otherattachment:
+        await ctx.channel.send("**Unpinned:**",embed=embed, files=[await f.to_file() for f in message.attachments])
+    else:
+        await ctx.channel.send("**Unpinned:**",embed=embed) 
+
+async def addpin(ctx, args: list):
+    id = int(args[0])
+    messages=await ctx.channel.fetch_message(id)
+    
+    messages=[]
+    for i in range(0, len(args)):
+        id = args[i]
+        try:
+            temp = await ctx.channel.fetch_message(int(id))
+        except:
+            args[i]=None
+            continue
+        messages.append(temp)
+    
+    if not len(messages)==0:
+        tempvar=hashlib.md5()
+        tempstr=""
+        for tempmsg in messages:
+            hi=9
+        id = 5 #HASH FUNCTION GOES HERE
+    
+    # Warn if there's more than one attachment
+    tempvar=0
+    for msg in messages:
+        if msg.attachments: tempvar+=1
+    if tempvar>1:
+        await ctx.channel.send("Warning: Pin group contains more than one attachment, messages might not be displayed correctly", delete_after=5)
+    
+    
+    if len(messages)==0 and await essential.keyexists(key=id, db="pins", key_name="message_id"):
+        await ctx.channel.send("Pin already exists", delete_after=3)
+    elif not len(messages)==0 and await essential.keyexists(key=id, db="pins", key_name="message_id"):
+        await ctx.channel.send("Pin group already exists", delete_after=3)
+    else:
+        addstr=""
+        for tempid in args:
+            if tempid == None: continue
+            addstr+=str(tempid)+" "
+        # Remember that for multi-message pins, id is the hash value
+        data=(messages[0].channel.id,id,int(time.time()), addstr)
+        essential.con.execute(f"INSERT INTO pins (channel, message_id, datetime, additional_pins) values (?,?,?,?)", data)
+        essential.con.commit()
+        embed=0
+        nickname="[Doesn't exist]"
+        try:
+            nickname=ctx.channel.guild.get_member(messages[0].author.id).nick
+        except:
+            nothing=4
+        
+        message = messages[0]
+        #Need to change this to accomidate for messages array
         #Message embed code starts here
         otherattachment=False
         if message.attachments:

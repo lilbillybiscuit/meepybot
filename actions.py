@@ -211,7 +211,8 @@ async def zipavatars(ctx):
     except: pass
     
     for member in memiter:
-        await member.avatar_url.save(f'{folderpath}/{member.id}.png')
+        await member.avatar_url.save(f'{folderpath}/{member.nick}-{member.id}.png')
+        asyncio.sleep(0.05)
     
     try:
         os.remove("cache/avatars-{ctx.guild.id}.zip")

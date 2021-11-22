@@ -92,9 +92,10 @@ async def getdata(key, msg=None):
     return res[1]
 
 @client.command(name="zipavatars", pass_context=True)
-@commands.has_permissions(manage_roles=True)
-@commands.cooldown(1, 21600)
+@commands.has_permissions(manage_channels=True, manage_roles=True)
+@commands.cooldown(1, 900)
 async def zipavatars(ctx):
+    print("Getting all avatars for", ctx.guild.id)
     try:
         await actions.zipavatars(ctx)
     except Exception as e:
@@ -208,18 +209,27 @@ async def setoption_error(ctx: commands.Context, error: commands.CommandError):
 
 @client.command(pass_context=True)
 async def version(ctx):
-    await ctx.channel.send("Version v0.2.10 (Search in OEIS)")
+    await ctx.channel.send("Meepybot Main v0.3.2 (Multiple Pin Preview)")
 
 @client.command(pass_context=True, brief="Pin a message with its ID")
 #@commands.has_permissions(manage_channels=True)
-async def pin(ctx, arg=None):
+async def pin(ctx, *args):
     message=ctx.message
     if not message.reference == None:
-        arg=message.reference.message_id
-    elif arg is None:
+        await respond.addsinglepin(message, int(message.reference.message_id))
+        return
+        args=[message.reference.message_id]
+    elif len(args)==0:
         await message.channel.send("Reply or ID required")
+        return
+    elif len(args)>1:
+        await message.channel.send("Pinning multiple messages is currently disabled")
+        return
+    elif len(args)>6:
+        await message.channel.send("Maximum of 6 messages allowed")
+        return
     try:
-        await respond.addpin(message, int(arg))
+        await respond.addsinglepin(message, int(args[0]))
     except Exception as e:
         print(e)
         await message.channel.send("Something went wrong...")
@@ -232,6 +242,11 @@ async def pin_error(ctx: commands.Context, error: commands.CommandError):
     await ctx.send(message, delete_after=3)
     await ctx.message.delete(delay=3)
 
+@client.command(pass_context=True)
+async def showpins(ctx):
+    await ctx.send(f"**View pins for this channel here:**\nhttps://meep.lilbillbiscuit.com/pinviewer?channel={ctx.channel.id}&key={essential.randomstring(30)}")
+    return
+
 @client.command(pass_context=True, brief="Unpin a message with its ID")
 @commands.has_permissions(manage_channels=True)
 async def unpin(ctx, arg=None):
@@ -240,6 +255,7 @@ async def unpin(ctx, arg=None):
         arg=message.reference.message_id
     elif arg is None:
         await message.channel.send("Reply or ID required")
+        return
     try:
         await respond.unpin(message, int(arg))
     except Exception as e:
@@ -368,9 +384,12 @@ async def forcemute(ctx, arg):
     mentions=message.mentions
     role = discord.utils.get(ctx.guild.roles, name = "text-muted")
     retstr = "Muted "
-    for member in mentions:
-        await member.add_roles(role)
-        retstr += f"{member.name}#{member.discriminator}, "
+    try:
+        for member in mentions:
+            await member.add_roles(role)
+            retstr += f"{member.name}#{member.discriminator}, "
+    except Exception as e:
+        print(e)        
     await ctx.channel.send(retstr[:-2])
     return
 

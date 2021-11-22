@@ -3,12 +3,21 @@ import discord
 from discord.ext import commands
 import pickle
 import re
+import string
+import random
 intents = discord.Intents.default()
 intents.members=True
 client = commands.Bot(command_prefix=('?meep ', '?mbot ', '?mmod '), intents=intents)
 
 cache=dict()
 
+def randomstring(N=50):
+    return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
+
+async def message_date_comparator(message1, message2):
+    if message1.created_at<message2.created_at: return -1
+    elif message1.created_at>message2.created_at: return 1
+    else: return 0
 async def delete_message(guild, channel, message):
     guild=client.get_guild(guild)
     if guild is None: return False

@@ -10,6 +10,7 @@ import asyncio
 import essential
 import threading
 import oeis
+import json
 
 #from persist_pq import Persist_PQ
 from discord.ext import commands, tasks
@@ -21,8 +22,8 @@ client = essential.client
 @client.event
 async def on_ready():
     print('Logged in as {0.user}'.format(client))
-    actions.start_background()
-
+    actions.background.start()
+    actions.update_pin_cache.start()
 def randomstring(N=40):
     ''.join(random.SystemRandom().choice(string.ascii_uppercase +
                                          string.digits) for _ in range(N))
@@ -90,6 +91,15 @@ async def getdata(key, msg=None):
         break
     if res == None: return None
     return res[1]
+
+@client.command(pass_context=True, aliases=['updatepin', 'refresh'])
+@commands.cooldown(5,900)
+async def updatepins(ctx):
+    try:
+        await respond.update_channel_pins(ctx)
+    except Exception as e:
+        print(e)
+        await ctx.channel.send('Something went wrong...')
 
 @client.command(name="zipavatars", pass_context=True)
 @commands.has_permissions(manage_channels=True, manage_roles=True)
@@ -209,7 +219,7 @@ async def setoption_error(ctx: commands.Context, error: commands.CommandError):
 
 @client.command(pass_context=True)
 async def version(ctx):
-    await ctx.channel.send("Meepybot Main v0.3.2 (Multiple Pin Preview)")
+    await ctx.channel.send("Meepybot Main v0.4.1 (Meepybot Website Beta)")
 
 @client.command(pass_context=True, brief="Pin a message with its ID")
 #@commands.has_permissions(manage_channels=True)
@@ -244,7 +254,7 @@ async def pin_error(ctx: commands.Context, error: commands.CommandError):
 
 @client.command(pass_context=True)
 async def showpins(ctx):
-    await ctx.send(f"**View pins for this channel here:**\nhttps://meep.lilbillbiscuit.com/pinviewer?channel={ctx.channel.id}&key={essential.randomstring(30)}")
+    await ctx.send(f"**View pins for this channel here:**\nhttps://meepybot.lilbillbiscuit.com/pinviewer?channel={ctx.channel.id}&key={essential.randomstring(30)}")
     return
 
 @client.command(pass_context=True, brief="Unpin a message with its ID")
@@ -589,7 +599,8 @@ async def on_message(message):
         
         firstword = command.split()[0]
         if firstword == 'log':
-          print(str(message))
+          print(json.dumps(await essential.messagetodict(message)))
+          print(message)
           await message.channel.send(f"Debug info logged ({randomstring(N=20)})", delete_after=2)
           return
           

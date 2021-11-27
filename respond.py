@@ -5,8 +5,41 @@ import pickle
 import os
 import time
 import hashlib
-
+import asyncio
+import json
+import datetime
 client = essential.client
+con=essential.con
+
+async def cachemessage(msg, saveguild=True):
+    sql='SELECT EXISTS(SELECT 1 FROM messages WHERE message_id=? LIMIT 1);'
+    with con:
+        exists=con.execute(sql, (msg.id,)).fetchall()[0][0]
+    #print(msg.id, exists)
+    if exists==0:
+        sql="INSERT INTO messages (message_id, message, updated) values (?,?,?)"
+        data=(msg.id, json.dumps(await essential.messagetodict(msg)),datetime.datetime.now().timestamp())
+    else:
+        sql="UPDATE messages SET message=?, updated=? WHERE message_id=?"
+        data=(json.dumps(await essential.messagetodict(msg)), datetime.datetime.now().timestamp(), msg.id)
+    with con:
+        con.execute(sql, data)
+        con.commit()
+    
+    if not saveguild: return
+    sql='SELECT EXISTS(SELECT 1 FROM pins WHERE channel=? AND message_id=? LIMIT 1);'
+    with con:
+        exists=con.execute(sql, (msg.channel.id, msg.id)).fetchall()[0][0]
+    #print(msg.id, exists)
+    if exists==0:
+        print("Can't insert guild, message doesn't exist")
+        return
+    else:
+        sql="UPDATE pins SET guild=? WHERE message_id=?"
+        data=(msg.guild.id, msg.id)
+    with con:
+        con.execute(sql, data)
+        con.commit()
 
 async def getrandompin2(ctx, arg=None):
     sql = "SELECT channel, message_id FROM pins WHERE channel=:chan ORDER BY RANDOM() LIMIT 1"
@@ -100,7 +133,7 @@ async def addsinglepin(ctx, command):
     if await essential.keyexists(key=id, db="pins", key_name="message_id"):
         await ctx.channel.send("Pin already exists", delete_after=3)
     else:
-        essential.con.execute(f"INSERT INTO pins (channel, message_id, datetime) values (?,?,?)", (message.channel.id,id,int(time.time())))
+        essential.con.execute(f"INSERT INTO pins (channel, message_id, datetime, guild) values (?,?,?,?)", (message.channel.id,id,int(time.time()),message.guild.id))
         essential.con.commit()
         embed=0
         nickname="[Doesn't exist]"
@@ -196,8 +229,8 @@ async def addpin(ctx, args: list):
             if tempid == None: continue
             addstr+=str(tempid)+" "
         # Remember that for multi-message pins, id is the hash value
-        data=(messages[0].channel.id,id,int(time.time()), addstr)
-        essential.con.execute(f"INSERT INTO pins (channel, message_id, datetime, additional_pins) values (?,?,?,?)", data)
+        data=(messages[0].channel.id,id,int(time.time()), addstr, messages[0].guild.id)
+        essential.con.execute(f"INSERT INTO pins (channel, message_id, datetime, additional_pins, guild) values (?,?,?,?,?)", data)
         essential.con.commit()
         embed=0
         nickname="[Doesn't exist]"
@@ -226,6 +259,8 @@ async def addpin(ctx, args: list):
             await ctx.channel.send("**Pinned:**",embed=embed, files=[await f.to_file() for f in message.attachments])
         else:
             await ctx.channel.send("**Pinned:**",embed=embed)
+        
+        await cachemessage(message, saveguild=False)
 
 async def unpin(ctx, command):
     id = int(command)
@@ -270,3 +305,23 @@ async def pullpins(ctx):
             essential.con.execute(f"INSERT INTO pins (channel, message_id) values (?,?)", (int(channel_id), int(message_id)))
             essential.con.commit()
     await channel.send(f"Successfully grabbed pins from {channel.name}")
+    
+async def update_channel_pins(ctx):
+    channel_id=ctx.channel.id
+    send = await ctx.channel.send("Updating pin cache for this channel...")
+    sql = "SELECT message_id FROM pins WHERE channel=?"
+    with con:
+        res = con.execute(sql, (channel_id,)).fetchall()
+    counter=0
+    for elem in res:
+        if counter%4==0:
+            await send.edit(content=f"Updating pin cache for this channel ({round(counter/len(res)*100,1)}% done)...")
+        counter+=1
+        try:
+            msg = await ctx.channel.fetch_message(elem[0])
+        except:
+            continue
+        await cachemessage(msg)
+        await asyncio.sleep(0.5)
+    await send.edit(content="Successfully refreshed!")
+

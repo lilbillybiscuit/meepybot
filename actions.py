@@ -6,9 +6,44 @@ import sqlite3 as sl
 import asyncio
 import os
 import shutil
+import respond
 client = essential.client
 con = essential.con
 from discord.ext import tasks
+
+@tasks.loop(seconds=3600)
+async def update_pin_cache():
+    sql = "SELECT guild, channel, message_id FROM pins"
+    with con:
+        res=con.execute(sql).fetchall()
+    curguild, curchannel=None,None
+    for i in range(len(res)):
+        if res[i][0]==None:
+            temp=list(res[i])
+            temp[0]=-100
+            res[i]=tuple(temp)
+    res.sort()
+    print(res)
+    for elem in res:
+        if elem[0]<0 or elem[1]==None: continue
+        guild_id, channel_id, message_id = elem[0], elem[1], elem[2]
+        if curguild==None or not curguild.id==guild_id:
+            print(f"Guild {None if curguild==None else curguild.id} --> {guild_id}")
+            curguild = client.get_guild(guild_id)
+            if curguild is None: continue
+        if curchannel==None or not curchannel.id==channel_id:
+            print(f"Channel {None if curchannel==None else curchannel.id} --> {channel_id}")
+            curchannel = curguild.get_channel(channel_id)
+            if curchannel is None: continue
+        message = await curchannel.fetch_message(message_id)
+        if message is None: continue
+        try:
+            await respond.cachemessage(message, saveguild=False)
+            print(message_id, "succeeded")
+        except Exception as e:
+            print(message_id, "failed")
+            continue
+        await asyncio.sleep(0.5)
 
 @tasks.loop(seconds=1.0)
 async def background():
@@ -66,8 +101,6 @@ async def background():
                 con.execute("DELETE FROM REQS WHERE id = ? AND action = ? and channel = ? AND guild = ?", data)
                 con.commit()
         #print(f"Deleted {res} from event queue")
-def start_background():
-    background.start()
 
 async def isslowmoded(message):
     if message.author.guild_permissions.administrator:

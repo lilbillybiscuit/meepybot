@@ -4,7 +4,9 @@ from discord.ext import commands
 import pickle
 import re
 import string
+import json
 import random
+import datetime
 intents = discord.Intents.default()
 intents.members=True
 client = commands.Bot(command_prefix=('?meep ', '?mbot ', '?mmod '), intents=intents)
@@ -95,3 +97,74 @@ async def getdata(key, db="USER", msg=None, retrow=False):
 
 async def extractnumbers(str1):
     return [int(s) for s in re.findall(r'\b\d+\b', str(str1))]
+
+async def messagetodict(message):
+    temp = {
+        'channel': {
+            'id' : message.channel.id,
+            'name' : message.channel.name,
+            'guild' : {
+                'id': message.channel.guild.id,
+                'name': message.channel.guild.name,
+            }
+        },
+        'guild': {
+            'id' : message.guild.id,
+            'name' : message.guild.name,
+        },
+        'content': str(message.content),
+        'clean_content': message.clean_content,
+        'mentions':[],
+        'attachments': [],
+        'has_attachments': bool(message.attachments),
+        'reactions':[],
+        'raw_mentions': list(message.raw_mentions),
+        'raw_channel_mentions': list(message.raw_channel_mentions),
+        'created_at': message.created_at.strftime("%m/%d/%Y at %H:%M"),
+        'jump_url': message.jump_url,
+        'updated': datetime.datetime.now().timestamp(),
+        'reference': {
+            'id': message.reference.message_id,
+            'channel_id':message.reference.channel_id,
+            'guild_id':message.reference.guild_id,
+            'jump_url': message.reference.jump_url,  
+        } if message.reference else None,
+        'author': {
+            "type": "member" if type(message.author) == discord.member.Member else 'user',
+            'id': message.author.id,
+            'name': message.author.name,
+            'nick': message.author.nick if type(message.author) == discord.member.Member else "Unknown",
+            'default_avatar_url': str(message.author.default_avatar_url),
+            'display_name': message.author.display_name,
+            'mention': message.author.mention,
+            'avatar_url': str(message.author.avatar_url),
+            'color': str(message.author.color) if type(message.author) == discord.member.Member else None,
+        }
+    }
+    if message.attachments:
+        for attachment in message.attachments:
+            temp2={
+                'content_type': attachment.content_type,
+                'url': attachment.url,
+                'size': attachment.size,
+                'filename': attachment.filename,
+            }
+            temp['attachments'].append(temp2)
+
+    '''if message.reactions:
+        for reaction in message.reactions:
+            costomemoji=reaction.is_custom_emoji()
+            temp2={
+                'count': reaction.count,
+                'custom_emoji': reaction.custom_emoji,
+                'emoji': {
+                    'is_custom_emoji': costomemoji,
+                    'url': reaction.url if customemoji else None,
+                    'id': reaction.id if customemoji else None,
+                    'name': reaction.name,
+                }
+            }
+            temp['reactions'].append(temp2)
+    '''
+    return temp
+    
